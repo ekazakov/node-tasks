@@ -57,7 +57,7 @@ const handlers = {
 
 require('http').createServer(function (req, res) {
     let pathname = decodeURI(url.parse(req.url).pathname);
-    console.log('pathname:', pathname);
+    
     if (req.method in handlers) {
         handlers[req.method](pathname, req, res);
     } else {
