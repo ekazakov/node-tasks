@@ -35,11 +35,13 @@ const path = require('path');
 const File = require('./file');
 
 function buildFilePath(pathname) {
+    if (pathname.indexOf('..'))
+
     if (pathname === '/') {
-        return (path.join(__dirname, '/public/index.html'));
+        return path.normalize(path.join(__dirname, '/public/index.html'));
     }
 
-    return (path.join(__dirname, 'files', pathname));
+    return path.normalize(path.join(__dirname, 'files', pathname));
 }
 
 function requestHandler(cb) {
@@ -56,8 +58,22 @@ const handlers = {
 };
 
 require('http').createServer(function (req, res) {
-    let pathname = decodeURI(url.parse(req.url).pathname);
-    
+    let pathname;
+
+    try {
+        pathname = decodeURI(url.parse(req.url).pathname);
+    } catch (e) {
+        res.statusCode = 400;
+        res.end('Bad request');
+        return;
+    }
+
+    if (pathname.indexOf('\0') !== -1) {
+        res.statusCode = 400;
+        res.end('Bad request');
+        return;
+    }
+
     if (req.method in handlers) {
         handlers[req.method](pathname, req, res);
     } else {

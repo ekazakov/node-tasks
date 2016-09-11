@@ -13,13 +13,12 @@ module.exports = class File {
     sendTo(res) {
         const file = fs.ReadStream(this.path);
         file.on('error', (err) => {
-
             if (err.code === FILE_NOT_FOUND) {
                 res.statusCode = 404;
                 res.end('File not found');
             } else {
                 res.statusCode = 400;
-                res.end('File is inaccessible');
+                res.end('Bad request');
             }
         });
 
@@ -50,7 +49,7 @@ module.exports = class File {
 
             file.on('error', (err) => {
                 res.statusCode = 400;
-                res.end(`Failed to save file: ${err.message}`)
+                res.end(`Bad request: ${err.message}`)
             });
             file.on('finish', () => {
                 res.end('File saved');
@@ -69,7 +68,7 @@ module.exports = class File {
             fs.unlink(this.path, (err) => {
                 if (err) {
                     res.statusCode = 400;
-                    res.end(`Failed to delete file: ${err.message}`)
+                    res.end(`Bad request: ${err.message}`)
                     return;
                 }
 
