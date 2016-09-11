@@ -34,8 +34,12 @@ const url = require('url');
 const path = require('path');
 const File = require('./file');
 
+const invalidPath = /(\.{2}\/)|([^.]\/)/;
+
 function buildFilePath(pathname) {
-    if (pathname.indexOf('..'))
+    if (invalidPath.test(pathname)) {
+        throw new Error('Invalid path');
+    }
 
     if (pathname === '/') {
         return path.normalize(path.join(__dirname, '/public/index.html'));
@@ -46,7 +50,16 @@ function buildFilePath(pathname) {
 
 function requestHandler(cb) {
     return (pathname, req, res) => {
-        const file = new File(buildFilePath(pathname));
+        let file;
+
+        try {
+            file = new File(buildFilePath(pathname));
+        } catch (e) {
+            res.statusCode = 400;
+            res.end('Bad request');
+            return;
+        }
+
         cb(file, req, res);
     }
 }
