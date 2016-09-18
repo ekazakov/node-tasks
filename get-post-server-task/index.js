@@ -32,6 +32,7 @@
 
 const url = require('url');
 const path = require('path');
+const http = require('http');
 const File = require('./file');
 
 const invalidPath = /(\.{2}\/)|([^.]\/)/;
@@ -53,44 +54,54 @@ function requestHandler(cb) {
         let file;
 
         try {
-            file = new File(buildFilePath(pathname));
+            file = new File(buildFilePath(pathname), req, res);
         } catch (e) {
             res.statusCode = 400;
             res.end('Bad request');
             return;
         }
 
-        cb(file, req, res);
+        cb(file);
     }
 }
 
 const handlers = {
-    'GET': requestHandler((file, req, res) => file.sendTo(res)),
-    'POST':  requestHandler((file, req, res) => file.save(req, res)),
-    'DELETE': requestHandler((file, req, res) => file.remove(res))
+    'GET': requestHandler((file) => file.sendTo()),
+    'POST':  requestHandler((file) => file.save()),
+    'DELETE': requestHandler((file) => file.remove())
 };
 
-require('http').createServer(function (req, res) {
-    let pathname;
 
-    try {
-        pathname = decodeURI(url.parse(req.url).pathname);
-    } catch (e) {
-        res.statusCode = 400;
-        res.end('Bad request');
-        return;
-    }
+function startServer(host = 'localhost', port = 3000) {
+    http.createServer(function (req, res) {
+        let pathname;
 
-    if (pathname.indexOf('\0') !== -1) {
-        res.statusCode = 400;
-        res.end('Bad request');
-        return;
-    }
+        try {
+            pathname = decodeURI(url.parse(req.url).pathname);
+        } catch (e) {
+            res.statusCode = 400;
+            res.end('Bad request');
+            return;
+        }
 
-    if (req.method in handlers) {
-        handlers[req.method](pathname, req, res);
-    } else {
-        res.statusCode = 502;
-        res.end("Not implemented");
-    }
-}).listen(3000);
+        if (pathname.indexOf('\0') !== -1) {
+            res.statusCode = 400;
+            res.end('Bad request');
+            return;
+        }
+
+        if (req.method in handlers) {
+            handlers[req.method](pathname, req, res);
+        } else {
+            res.statusCode = 502;
+            res.end("Not implemented");
+        }
+    }).listen(port, host);
+}
+
+if (module.parent) {
+    module.exports = startServer;
+} else {
+    startServer();
+}
+

@@ -5,76 +5,133 @@ const FILE_NOT_FOUND = 'ENOENT';
 const MEGABYTE = Math.pow(2, 20);
 
 module.exports = class File {
-    constructor(path, maxSize = MEGABYTE) {
+    constructor(path, req, res, maxSize = MEGABYTE) {
         this.path = path;
         this.maxSize = maxSize;
+        this.req = req;
+        this.res = res;
     }
 
-    sendTo(res) {
-        const file = fs.ReadStream(this.path);
-        file.on('error', (err) => {
+    sendTo() {
+        const fileStream = fs.createReadStream(this.path);
+        fileStream.pipe(this.res);
+
+        fileStream.on('open', () => {
+            this.res.setHeader('Content-Type', `${mime.lookup(this.path)}`);
+        });
+        fileStream.on('error', (err) => {
             if (err.code === FILE_NOT_FOUND) {
-                res.statusCode = 404;
-                res.end('File not found');
+                this.res.statusCode = 404;
+                this.res.end('File not found');
+            } else if (!this.res.headersSent) {
+                this.res.statusCode = 500;
+                this.res.end('Bad request');
             } else {
-                res.statusCode = 400;
-                res.end('Bad request');
+                this.res.end();
             }
         });
 
-        file.pipe(res);
-        res.setHeader('Content-Type', `${mime.lookup(this.path, 'text/html')}`);
-
-        res.on('close', () => file.destroy());
+        this.res.on('close', () => fileStream.destroy());
     }
 
-    save(req, res) {
-        fs.access(this.path, fs.constants.F_OK, (err) => {
-           if (!err) {
-               res.statusCode = 409;
-               res.end('File already exists');
-               req.destroy();
-               return;
-           }
+    save() {
+        let size = 0;
+        const writeStream = new fs.WriteStream(this.path, {flags: 'wx'});
 
-            if (req.headers['content-length'] > this.maxSize) {
-                res.statusCode = 413;
-                res.end('File to large');
-                req.destroy();
-                return;
+        this.req.on('data', (chunk) => {
+            size += chunk.length;
+            if (size > this.maxSize) {
+                this.res.statusCode = 413;
+                this.res.setHeader('Connection', 'close');
+                this.res.end('File to large');
+
+                writeStream.destroy();
+                fs.unlink(this.path, err => {});
             }
+        });
+        this.req.on('close', () => {
+            console.log('file save request closed');
+            writeStream.destroy();
+            fs.unlink(this.path, err => {});
+            console.log('save file aborted');
+        });
 
-            const file = fs.createWriteStream(this.path, {code: 'w'});
-            req.pipe(file);
+        this.req.on('end', () => {
+            console.log('file save request ended');
+        });
 
-            file.on('error', (err) => {
-                res.statusCode = 400;
-                res.end(`Bad request: ${err.message}`)
-            });
-            file.on('finish', () => {
-                res.end('File saved');
+        this.req.on('aborted', () => {
+            console.log('file save request aborted');
+        });
+
+        this.req.pipe(writeStream);
+
+        writeStream.on('open', () => {
+            console.log('write stream opened');
+            process.nextTick(() => {
+                writeStream.emit('error');
             });
         });
-    }
+        writeStream.on('finish', () => {
+            console.log('file save finish');
+        });
 
-    remove(res) {
-        fs.access(this.path, fs.constants.F_OK, (err) => {
-            if (err) {
-                res.statusCode = 404;
-                res.end('File not found');
-                return;
-            }
-
-            fs.unlink(this.path, (err) => {
-                if (err) {
-                    res.statusCode = 400;
-                    res.end(`Bad request: ${err.message}`)
-                    return;
+        writeStream.on('error', (err) => {
+            console.log('file save error');
+            if (err && (err.code === 'EEXIST' || err.code === 'EISDIR')) {
+                this.res.statusCode = 409;
+                this.res.end('File already exists');
+            } else {
+                if (!this.res.headersSent) {
+                    this.res.statusCode = 500;
+                    this.res.setHeader('Connection', 'close');
+                    this.res.end("Internal error");
+                } else {
+                    this.res.end();
                 }
 
-                res.statusCode = 200;
-                res.end(`File deleted`);
-            })
+                fs.unlink(this.path, err => {});
+            }
+
+            // TODO: wtf?
+            this.res.destroy();
+            // writeStream.destroy();
+        });
+        writeStream.on('close', () => {
+            console.log('save file stream closed');
+            this.res.statusCode = 201;
+            this.res.end('Created');
+        });
+    }
+
+    remove() {
+        fs.unlink(this.path, (err) => {
+            if (err) {
+                if (err.code === FILE_NOT_FOUND) {
+                    this.res.statusCode = 404;
+                    this.res.end('File not found');
+                } else {
+                    this.res.statusCode = 500;
+                    this.res.end("Internal error");
+                }
+                return;
+            }
+
+            this.res.statusCode = 200;
+            this.res.end(`File deleted`);
         });
     }
 };
+
+/*
+TODO:
+ - res.destroy(); похоже что оно закрывает сокет
+ - this.res.setHeader('Connection', 'close'); vs req.destroy
+ - error event in req and res
+
+- Зачем res.destroy() в обработчике ошибки в receiveFile
+    - Если закоментить только res.destroy(), то больше никаие обработчики req и writeStream не срабоатют
+    - Если закоментить только res.end(), то обработаются события aborted и close у request и close writeStream
+    - Если в receiveFile закоментить res.end() в res.destroy() то сработает событие end у request
+- В случае ошибки writeStream в какой момент он закроется?
+*/
