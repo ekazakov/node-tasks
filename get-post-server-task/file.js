@@ -50,34 +50,34 @@ module.exports = class File {
             }
         });
         this.req.on('close', () => {
-            console.log('file save request closed');
+            // console.log('file save request closed');
             writeStream.destroy();
             fs.unlink(this.path, err => {});
-            console.log('save file aborted');
+            // console.log('save file aborted');
         });
 
         this.req.on('end', () => {
-            console.log('file save request ended');
+            // console.log('file save request ended');
         });
 
         this.req.on('aborted', () => {
-            console.log('file save request aborted');
+            // console.log('file save request aborted');
         });
 
         this.req.pipe(writeStream);
 
         writeStream.on('open', () => {
-            console.log('write stream opened');
-            process.nextTick(() => {
-                writeStream.emit('error');
-            });
+            // console.log('write stream opened');
+            // process.nextTick(() => {
+            //     writeStream.emit('error');
+            // });
         });
         writeStream.on('finish', () => {
-            console.log('file save finish');
+            // console.log('file save finish');
         });
 
         writeStream.on('error', (err) => {
-            console.log('file save error');
+            // console.log('file save error');
             if (err && (err.code === 'EEXIST' || err.code === 'EISDIR')) {
                 this.res.statusCode = 409;
                 this.res.end('File already exists');
@@ -92,15 +92,11 @@ module.exports = class File {
 
                 fs.unlink(this.path, err => {});
             }
-
-            // TODO: wtf?
-            this.res.destroy();
-            // writeStream.destroy();
         });
         writeStream.on('close', () => {
-            console.log('save file stream closed');
+            // console.log('save file stream closed');
             this.res.statusCode = 201;
-            this.res.end('Created');
+            this.res.end('Created!');
         });
     }
 
