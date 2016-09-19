@@ -1,5 +1,4 @@
 /* global describe, before, beforeEach, after, it, context */
-// require('epipebomb')();
 const expect = require('expect');
 const server = require('../server');
 
