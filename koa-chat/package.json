@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node chat.js",
     "test": "NODE_ENV=test mocha --reporter spec --colors --timeout 10000 --recursive",
     "test-watch": "npm test -- --watch",
     "test-debug": "npm test -- --debug --no-exit"
@@ -12,8 +13,10 @@
   "license": "ISC",
   "dependencies": {
     "co": "4.6.0",
+    "co-body": "4.0.0",
     "co-mocha": "1.1.3",
     "config": "1.21.0",
+    "death": "1.0.0",
     "expect": "1.20.2",
     "koa": "1.2.4",
     "mocha": "3.0.2",

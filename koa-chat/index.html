@@ -38,7 +38,7 @@
         xhr.onload = function () {
             var li = document.createElement('li');
             li.textContent = this.responseText;
-            if (this.statusCode === 200) {
+            if (this.status === 200) {
                 messages.appendChild(li);
             }
 
