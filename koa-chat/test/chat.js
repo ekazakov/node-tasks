@@ -8,6 +8,24 @@ const rp = require('request-promise');
 const host = 'http://localhost:3006';
 
 
+// describe('deferred', function () {
+//     it.only('resolve', function * () {
+//         const def = defer();
+//
+//         setTimeout(() => def.resolve(10), 10);
+//         const result = yield def.promise;
+//         expect(result).toBe(10);
+//     });
+//     it.only('reject', function * () {
+//         const def = defer();
+//
+//         setTimeout(() => def.reject(new Error('foo')), 10);
+//         const result = yield def.promise.catch(err => err);
+//
+//         expect(result.message).toBe('foo');
+//     });
+// });
+
 describe('Koa chat', () => {
     let server;
     beforeEach((done) => {

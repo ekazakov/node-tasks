@@ -6,6 +6,18 @@ const koa = require('koa');
 const PassTrough = require('stream').PassThrough;
 const app = koa();
 
+function defer() {
+    let resolve, reject;
+    const promise = new Promise((...args) => {
+        ([resolve, reject] = args);
+    });
+    return {
+        reject,
+        resolve,
+        promise
+    };
+}
+
 app.context.subscribers = [];
 
 function serveIndex() {
