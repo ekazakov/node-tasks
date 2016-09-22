@@ -4,27 +4,11 @@ require('co-mocha');
 
 const expect = require('expect');
 const chat = require('../chat');
-const rp = require('request-promise');
+const rp = require('request-promise').defaults({
+    resolveWithFullResponse: true,
+    simple: false
+});
 const host = 'http://localhost:3006';
-
-
-// describe('deferred', function () {
-//     it.only('resolve', function * () {
-//         const def = defer();
-//
-//         setTimeout(() => def.resolve(10), 10);
-//         const result = yield def.promise;
-//         expect(result).toBe(10);
-//     });
-//     it.only('reject', function * () {
-//         const def = defer();
-//
-//         setTimeout(() => def.reject(new Error('foo')), 10);
-//         const result = yield def.promise.catch(err => err);
-//
-//         expect(result.message).toBe('foo');
-//     });
-// });
 
 describe('Koa chat', () => {
     let server;
@@ -36,11 +20,10 @@ describe('Koa chat', () => {
     describe('GET /subscribe', () => {
         context('If message published', () => {
             it('return 200 and message', function * () {
-                const subscriptionReq = rp.get({url: `${host}/subscribe`, resolveWithFullResponse: true});
+                const subscriptionReq = rp.get({url: `${host}/subscribe`});
                 const publishingReq = rp.post({
                     url: `${host}/publish`,
-                    body: JSON.stringify({message: 'hello'}),
-                    resolveWithFullResponse: true
+                    body: JSON.stringify({message: 'hello'})
                 });
 
                 const subscriptionRes = yield subscriptionReq;
@@ -52,37 +35,59 @@ describe('Koa chat', () => {
                 expect(publishingRes.statusCode).toBe(200);
             });
         });
-        context('Otherwise', () => {
+        context('If subscription closed by timeout', () => {
             it('return 202', function * () {
                 this.slow(5000);
-                const subscriptionReq = rp.get({url: `${host}/subscribe`, resolveWithFullResponse: true});
+                const subscriptionReq = rp.get({url: `${host}/subscribe`});
                 const subscriptionRes = yield subscriptionReq;
                 expect(subscriptionRes.statusCode).toBe(202);
+            });
+
+            //TODO: как лучше тестировать?
+            it('clear subscribers', function * () {
+                this.slow(5000);
+                expect(chat.context.subscribers.length).toEqual(0);
+                const subscriptionReq = rp.get({url: `${host}/subscribe`});
+                yield subscriptionReq;
+                expect(chat.context.subscribers.length).toEqual(0);
             });
         });
     });
 
     describe('POST /publish', () => {
-        it('return 200', function * () {
-            const publishingReq = rp.post({
-                url: `${host}/publish`,
-                body: JSON.stringify({message: 'hello'}),
-                resolveWithFullResponse: true
-            });
+        context('When message is valid JSON', () => {
+            it('return 200', function *() {
+                const publishingReq = rp.post({
+                    url: `${host}/publish`,
+                    body: JSON.stringify({message: 'hello'})
+                });
 
-            const publishingRes = yield publishingReq;
-            expect(publishingRes.statusCode).toBe(200);
+                const publishingRes = yield publishingReq;
+                expect(publishingRes.statusCode).toBe(200);
+            });
+        });
+
+        context('Otherwise', () => {
+            it('return 400', function * () {
+                const publishingReq = rp.post({
+                    url: `${host}/publish`,
+                    body: 'simple text'
+                });
+
+                const publishingRes = yield publishingReq;
+                expect(publishingRes.statusCode).toBe(400);
+            });
         });
     });
-    
+
     describe('Simple chat', () => {
+        //TODO: бывает падает по таймауту
         it('Two subscribers receive message', function * () {
-            const subscriptionReqOne = rp.get({url: `${host}/subscribe`, resolveWithFullResponse: true});
-            const subscriptionReqTow = rp.get({url: `${host}/subscribe`, resolveWithFullResponse: true});
+            const subscriptionReqOne = rp.get({url: `${host}/subscribe`});
+            const subscriptionReqTow = rp.get({url: `${host}/subscribe`});
             const publishingReq = rp.post({
                 url: `${host}/publish`,
-                body: JSON.stringify({message: 'hello'}),
-                resolveWithFullResponse: true
+                body: JSON.stringify({message: 'hello'})
             });
 
             const responses = yield Promise.all([subscriptionReqOne, subscriptionReqTow]);
