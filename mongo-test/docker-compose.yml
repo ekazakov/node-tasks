@@ -1,0 +1,24 @@
+version: "2"
+services:
+  backend:
+    build: ./backend
+    restart: "no"
+    links:
+      - mongo
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8080:8080"
+  frontend:
+    build: ./frontend
+    voluems:
+      - ./frontend:/usr/share/nginx/html
+      - ./frontend/nginx.conf:/etc/nginx/nginx.conf
+      - ./frontend/default.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "80:80"
+      - "443:443"
+  mongo:
+    image: mongo:3.3
+    ports:
+      - "27017:27017"

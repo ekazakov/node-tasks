@@ -1,7 +1,7 @@
-const mongoClient = require('mongodb').MongoClient;
+const MongoClient = require('mongodb').MongoClient;
 const assert = require('assert');
 
-const connectionUrl = `mongodb://localhost:27017/mongo-test`;
+const connectionUrl = `mongodb://mongo:27017/mongo-test`;
 
 function insertDocuments(db, callback) {
     const collection = db.collection('documents');
@@ -38,6 +38,30 @@ function updateDocument(db, callback) {
     })
 }
 
+const co = require('co');
+
+    co(function * () {
+        let db;
+        try {
+            console.log('Trying to connect to mongo');
+            db = yield MongoClient.connect(connectionUrl);
+            console.log('Connected successfully');
+            const collection = db.collection('documents');
+            let docs = yield collection.find().toArray();
+
+            if (docs.length === 0) {
+                docs = yield collection.insertMany([{a: 1}, {a: 2}, {a: 3}]);
+            }
+            console.log('Found the following records:');
+            console.log(docs);
+        } catch(error) {
+            console.log(error);
+        } finally {
+            db && db.close();
+        }
+    });
+
+
 // mongoClient.connect(connectionUrl, (err, db) => {
 //     if (err) {
 //         console.error(err);
@@ -52,22 +76,3 @@ function updateDocument(db, callback) {
 //     });
 // });
 
-const co = require('co');
-co(function *() {
-
-    let result;
-    try {
-        resutlt = yield Promise.resolve(2);
-        // return {x: 1};
-    } catch (error) {
-        result = 3;
-    } finally {
-        return 5;
-    }
-
-    return result;
-}).then((result) => {
-    console.log('success:', result);
-}).catch((error) => {
-    console.log('fail:', error);
-});
