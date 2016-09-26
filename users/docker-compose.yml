@@ -1,12 +1,30 @@
 version: "2"
 services:
-  server:
-    image: koa-mongo:latest
+  frontend:
+    build: ./frontend
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+      - ./frontend/nginx.conf:/etc/nginx/nginx.conf
+      - ./frontend/default.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "80:80"
+      - "443:443"
+    links:
+      - backend:backend_service
+
+  backend:
+    build: ./backend
     restart: "no"
     links:
       - mongo
     volumes:
-      - .:/app
+      - ./backend:/src/app
+      - ./package.json:/src/app/package.json
+      - ./node_modules:/src/node_modules
+    ports:
+      - "8080:8080"
+#    entrypoint: tail -f /dev/null
+
   mongo:
     image: mongo:3.3
     ports:

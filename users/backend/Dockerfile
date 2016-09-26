@@ -4,11 +4,11 @@ FROM node:6.6.0
 # И не пересобирать контенйер при установке новых зависимостей.
 # rm -v как работает?
 
-RUN mkdir -p /usr/src/app
-WORKDIR /usr/src/app
+RUN mkdir -p /src/app
+WORKDIR /src/app
 
-VOLUME ["/usr/src/app"]
+VOLUME ["/src/app", "/src/node_modules"]
 
-EXPOSE 3005
+EXPOSE 8080
 
 CMD [ "npm", "start" ]
