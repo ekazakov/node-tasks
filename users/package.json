@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "cd backend && supervisor -n exit index.js",
     "test": "NODE_ENV=test mocha --reporter spec --colors --timeout 10000 --recursive",
     "test-watch": "npm test -- --watch",
     "test-debug": "npm test -- --debug --no-exit"
@@ -28,7 +28,8 @@
     "koa-static": "2.0.0",
     "mocha": "3.0.2",
     "mongoose": "4.6.1",
-    "mongoose-mongodb-errors": "git@github.com:iliakan/mongoose-unique-handler.git#master",
+    "mongoose-beautiful-unique-validation": "5.1.1",
+    "ramda": "0.22.1",
     "request": "2.75.0",
     "request-promise": "4.1.1",
     "stack-chain": "1.3.7",
