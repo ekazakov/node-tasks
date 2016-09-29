@@ -13,7 +13,7 @@ const router = new Router({
 });
 
 router.param('userId', function *(id, next) {
-    this.assert(mongoose.Types.ObjectId.$isValid(id), 404, 'User not found');
+    this.assert(mongoose.Types.ObjectId.isValid(id), 404, 'User not found');
     this.state.user = yield User.findById(id);
     this.assert(this.state.user != null, 404, 'User not found');
 

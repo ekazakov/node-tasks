@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "cd backend && supervisor -n exit index.js",
-    "test": "NODE_ENV=test mocha --reporter spec --colors --timeout 10000 --recursive",
+    "test": "cd backend && NODE_ENV=test mocha --reporter spec --colors --timeout 10000 --recursive",
     "test-watch": "npm test -- --watch",
     "test-debug": "npm test -- --debug --no-exit"
   },
@@ -19,6 +19,8 @@
     "config": "1.21.0",
     "death": "1.0.0",
     "expect": "1.20.2",
+    "gulp": "3.9.1",
+    "gulp-nodemon": "2.2.0",
     "koa": "1.2.4",
     "koa-bodyparser": "2.2.0",
     "koa-favicon": "1.2.1",

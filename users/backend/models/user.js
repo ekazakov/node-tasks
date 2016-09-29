@@ -24,9 +24,15 @@ const userSchema = new mongoose.Schema({
 userSchema.options.emitIndexErrors = true;
 userSchema.statics.publicFields = ['email', 'displayName'];
 const beautifyUnique = require('mongoose-beautiful-unique-validation');
-// userSchema.plugin(beautifyUnique);
+userSchema.plugin(beautifyUnique);
 
-const User = mongoose.model('User', userSchema);
+
+function modelFactory(mongoose) {
+    return (name, schema) =>
+        mongoose.modelNames().includes(name) ? mongoose.model(name, schema) : mongoose.model(name, schema);
+}
+
+const  User = mongoose.model('User', userSchema); //modelFactory(mongoose)('User', userSchema);
 
 User.on('error', (error) => {
     console.log('======================================');
